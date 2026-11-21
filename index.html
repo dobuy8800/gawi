@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>가위바위보 룰렛</title>
+
+  <style>
+    /* 기본 설정 */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+
+      min-height: 100vh;
+
+      font-family: "Malgun Gothic",
+                   "Apple SD Gothic Neo",
+                   sans-serif;
+
+      background: linear-gradient(
+        135deg,
+        #eaf4ff,
+        #f7efff
+      );
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      color: #222;
+    }
+
+    /* 전체 화면 */
+    .container {
+      width: 100%;
+      max-width: 750px;
+
+      background: white;
+
+      border-radius: 28px;
+      padding: 35px 20px;
+
+      text-align: center;
+
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    /* 제목 */
+    h1 {
+      font-size: clamp(32px, 6vw, 48px);
+      color: #263e73;
+
+      margin: 0 0 15px;
+    }
+
+    /* 안내 문구 */
+    .description {
+      font-size: clamp(20px, 4vw, 26px);
+      color: #555;
+
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* 결과 표시 영역 */
+    .result {
+      min-height: 110px;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      font-size: clamp(34px, 8vw, 58px);
+      font-weight: 900;
+
+      color: #243f87;
+
+      margin-bottom: 20px;
+      line-height: 1.3;
+    }
+
+    /* 룰렛 전체 영역 */
+    .roulette-area {
+      position: relative;
+
+      width: min(100%, 470px);
+
+      margin: 0 auto 30px;
+
+      padding-top: 30px;
+    }
+
+    /* 화살표 */
+    .pointer {
+      position: absolute;
+
+      top: 0;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      width: 0;
+      height: 0;
+
+      border-left: 25px solid transparent;
+      border-right: 25px solid transparent;
+      border-top: 48px solid #222;
+
+      z-index: 10;
+
+      filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25));
+    }
+
+    /* 회전 원판 */
+    .wheel {
+      position: relative;
+
+      width: 100%;
+      aspect-ratio: 1 / 1;
+
+      border-radius: 50%;
+
+      border: 10px solid #fff;
+
+      background: conic-gradient(
+        from -60deg,
+
+        #ffcc48 0deg 120deg,
+        #ff7474 120deg 240deg,
+        #62b5ff 240deg 360deg
+      );
+
+      box-shadow:
+        0 0 0 7px #354b79,
+        0 12px 25px rgba(0,0,0,0.2);
+
+      transform: rotate(0deg);
+
+      overflow: hidden;
+
+      will-change: transform;
+    }
+
+    /* 원판 안의 가위, 바위, 보 */
+    .wheel-item {
+      position: absolute;
+
+      display: flex;
+      flex-direction: column;
+
+      justify-content: center;
+      align-items: center;
+
+      transform: translate(-50%, -50%);
+
+      font-weight: 900;
+      color: #17243b;
+
+      width: 33%;
+      text-align: center;
+
+      line-height: 1.2;
+    }
+
+    /* 이모지 */
+    .emoji {
+      font-size: clamp(40px, 10vw, 75px);
+      line-height: 1.2;
+    }
+
+    /* 가위바위보 글씨 */
+    .item-text {
+      font-size: clamp(25px, 6vw, 39px);
+      margin-top: 4px;
+    }
+
+    /* 원판의 각 칸 중앙 배치 */
+    .scissors {
+      top: 24%;
+      left: 50%;
+    }
+
+    .rock {
+      top: 63%;
+      left: 73%;
+    }
+
+    .paper {
+      top: 63%;
+      left: 27%;
+    }
+
+    /* 중앙 장식 */
+    .wheel-center {
+      position: absolute;
+
+      top: 50%;
+      left: 50%;
+
+      transform: translate(-50%, -50%);
+
+      width: 48px;
+      height: 48px;
+
+      border-radius: 50%;
+
+      background: white;
+      border: 7px solid #354b79;
+
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+
+      z-index: 3;
+    }
+
+    /* 버튼 */
+    button {
+      width: 100%;
+      max-width: 440px;
+
+      min-height: 90px;
+
+      border: none;
+      border-radius: 18px;
+
+      font-family: inherit;
+      font-size: clamp(28px, 6vw, 38px);
+      font-weight: 900;
+
+      color: white;
+
+      cursor: pointer;
+
+      padding: 15px 25px;
+
+      touch-action: manipulation;
+
+      transition:
+        background 0.2s,
+        transform 0.2s;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    button:focus-visible {
+      outline: 5px solid #ffbf47;
+      outline-offset: 5px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* 돌리기 버튼 */
+    #spinButton {
+      background: #275bd8;
+    }
+
+    #spinButton:hover:not(:disabled) {
+      background: #1746b8;
+    }
+
+    /* 다시 돌리기 버튼 */
+    #retryButton {
+      display: none;
+      background: #21834d;
+    }
+
+    #retryButton:hover:not(:disabled) {
+      background: #176437;
+    }
+
+    /* 안내 메시지 */
+    .status {
+      margin-top: 25px;
+
+      min-height: 34px;
+
+      font-size: clamp(19px, 4vw, 24px);
+      font-weight: bold;
+
+      color: #555;
+      line-height: 1.5;
+    }
+
+    /* 모바일 대응 */
+    @media (max-width: 480px) {
+      .container {
+        padding: 25px 15px;
+      }
+
+      .roulette-area {
+        width: min(100%, 350px);
+      }
+
+      .wheel {
+        border-width: 7px;
+      }
+
+      .wheel-center {
+        width: 38px;
+        height: 38px;
+        border-width: 5px;
+      }
+
+      .pointer {
+        border-left-width: 20px;
+        border-right-width: 20px;
+        border-top-width: 40px;
+      }
+
+      button {
+        min-height: 80px;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>🎯 가위바위보 룰렛</h1>
+
+    <p class="description">
+      버튼을 누르면<br>
+      행운의 가위바위보가 결정됩니다!
+    </p>
+
+    <!-- 결과 영역 -->
+    <div
+      class="result"
+      id="result"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      준비!
+    </div>
+
+    <!-- 원판 -->
+    <div class="roulette-area">
+
+      <!-- 고정 화살표 -->
+      <div class="pointer"></div>
+
+      <!-- 회전하는 원판 -->
+      <div class="wheel" id="wheel">
+
+        <!-- 가위 -->
+        <div class="wheel-item scissors">
+          <span class="emoji">✌️</span>
+          <span class="item-text">가위</span>
+        </div>
+
+        <!-- 바위 -->
+        <div class="wheel-item rock">
+          <span class="emoji">✊</span>
+          <span class="item-text">바위</span>
+        </div>
+
+        <!-- 보 -->
+        <div class="wheel-item paper">
+          <span class="emoji">✋</span>
+          <span class="item-text">보</span>
+        </div>
+
+        <!-- 원판 중앙 장식 -->
+        <div class="wheel-center"></div>
+
+      </div>
+
+    </div>
+
+    <!-- 최초 돌리기 버튼 -->
+    <button
+      id="spinButton"
+      type="button"
+    >
+      🔄 돌리기
+    </button>
+
+    <!-- 다시 돌리기 버튼 -->
+    <button
+      id="retryButton"
+      type="button"
+    >
+      🔄 다시 돌리기
+    </button>
+
+    <!-- 안내 메시지 -->
+    <div class="status" id="status">
+      돌리기 버튼을 눌러주세요!
+    </div>
+
+  </main>
+
+  <script>
+
+    // 필요한 HTML 요소 가져오기
+    const wheel = document.getElementById("wheel");
+
+    const result = document.getElementById("result");
+
+    const spinButton = document.getElementById("spinButton");
+
+    const retryButton = document.getElementById("retryButton");
+
+    const statusText = document.getElementById("status");
+
+    // 룰렛 항목
+    const items = [
+      {
+        name: "가위",
+        emoji: "✌️"
+      },
+      {
+        name: "바위",
+        emoji: "✊"
+      },
+      {
+        name: "보",
+        emoji: "✋"
+      }
+    ];
+
+    // 현재 회전 각도
+    let currentRotation = 0;
+
+    // 회전 중복 실행 방지
+    let isSpinning = false;
+
+    // 룰렛 돌리기
+    function spinRoulette() {
+
+      if (isSpinning) {
+        return;
+      }
+
+      isSpinning = true;
+
+      // 버튼 비활성화
+      spinButton.disabled = true;
+      retryButton.disabled = true;
+
+      // 이전 결과 지우기
+      result.textContent = "빙글빙글!";
+
+      statusText.textContent = "🎲 룰렛이 돌아가고 있습니다...";
+
+      // 0: 가위, 1: 바위, 2: 보
+      const selectedIndex = Math.floor(Math.random() * 3);
+
+      // 각 칸의 중심 각도
+      // 가위: 0도
+      // 바위: 120도
+      // 보: 240도
+      const selectedAngle = selectedIndex * 120;
+
+      // 화살표는 위쪽에 고정되어 있으므로
+      // 선택된 칸의 중심을 위로 이동
+      const targetAngle = (360 - selectedAngle) % 360;
+
+      // 현재 원판 각도를 0~359도로 정규화
+      const currentAngle =
+        ((currentRotation % 360) + 360) % 360;
+
+      // 목표 각도까지 앞으로 이동할 거리
+      const additionalAngle =
+        (targetAngle - currentAngle + 360) % 360;
+
+      // 최소 6바퀴에서 최대 8바퀴 회전
+      const fullTurns = 6 + Math.floor(Math.random() * 3);
+
+      // 회전 각도 누적
+      currentRotation +=
+        fullTurns * 360 + additionalAngle;
+
+      // 약 5초 동안 빠르게 돌다가 천천히 정지
+      wheel.style.transition =
+        "transform 5s cubic-bezier(0.12, 0.7, 0.12, 1)";
+
+      wheel.style.transform =
+        `rotate(${currentRotation}deg)`;
+
+      // 5초 후 결과 표시
+      setTimeout(() => {
+
+        const selectedItem = items[selectedIndex];
+
+        result.textContent =
+          selectedItem.emoji + " " + selectedItem.name + "!";
+
+        statusText.textContent =
+          "🎉 결과가 나왔습니다! 다시 돌릴 수 있어요.";
+
+        // 최초 버튼 숨기기
+        spinButton.style.display = "none";
+
+        // 다시 돌리기 버튼 표시
+        retryButton.style.display = "inline-block";
+
+        // 버튼 활성화
+        spinButton.disabled = false;
+        retryButton.disabled = false;
+
+        isSpinning = false;
+
+      }, 5000);
+
+    }
+
+    // 돌리기 버튼
+    spinButton.addEventListener("click", spinRoulette);
+
+    // 다시 돌리기 버튼
+    retryButton.addEventListener("click", spinRoulette);
+
+  </script>
+
+</body>
+</html>
